@@ -2,21 +2,30 @@ import Crossword from '../models/Crossword.js';
 
 export const createCrossword = async (req, res) => {
   try {
-    const { name, status, grade, subject } = req.body;
+    console.log('Creating crossword with data:', req.body);
+    const { title, status, gradeLevel, subject } = req.body;
     
-    // Chuyển đổi trạng thái từ frontend sang định dạng của DB
-    const dbStatus = status === 'public' ? 'Chia sẻ' : 'Không chia sẻ';
-    
+    // Validate dữ liệu đầu vào
+    if (!title || !status || !gradeLevel || !subject) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng cung cấp đầy đủ thông tin: tên ô chữ, trạng thái, cấp lớp và môn học'
+      });
+    }
+
+    // Tạo ô chữ mới với đầy đủ thông tin
     const crossword = new Crossword({
-      title: name,
-      status: dbStatus,
-      gradeLevel: grade,
-      subject: subject,
-      author: req.user._id, // Lấy từ middleware auth
-      mainKeyword: [] // Khởi tạo rỗng, sẽ cập nhật sau
+      title,                // Tên ô chữ
+      status,              // Trạng thái (Chia sẻ/Không chia sẻ)
+      gradeLevel,          // Cấp lớp
+      subject,             // Môn học
+      author: req.user._id, // ID tác giả từ middleware auth
+      timesPlayed: 0,      // Số lần chơi, mặc định là 0
+      mainKeyword: []      // Từ khóa chính, khởi tạo rỗng
     });
 
     await crossword.save();
+    console.log('Crossword created successfully:', crossword);
 
     res.status(201).json({
       success: true,
@@ -25,6 +34,7 @@ export const createCrossword = async (req, res) => {
     });
     
   } catch (error) {
+    console.error('Error creating crossword:', error);
     res.status(500).json({
       success: false,
       message: 'Lỗi khi tạo ô chữ',
