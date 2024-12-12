@@ -1,13 +1,20 @@
 import express from 'express';
-import { auth } from '../middleware/auth.js';
-import { createCrossword, getCrossword } from '../controllers/crosswordController.js';
+import { crosswordController } from '../controllers/crosswordController.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Route tạo ô chữ mới - cần xác thực
-router.post('/create', auth, createCrossword);
+// Log để debug
+router.use((req, res, next) => {
+    console.log('Crossword Route:', req.method, req.path);
+    next();
+});
 
-// Route lấy thông tin ô chữ
-router.get('/:id', getCrossword);
+// Routes
+router.post('/', authMiddleware, crosswordController.create);
+router.get('/', authMiddleware, crosswordController.getAll);
+router.get('/:id', authMiddleware, crosswordController.getById);
+router.put('/:id', authMiddleware, crosswordController.update);
+router.delete('/:id', authMiddleware, crosswordController.delete);
 
 export default router;

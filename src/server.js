@@ -36,7 +36,6 @@ app.use((req, _, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/crosswords', crosswordRoutes);
-
 // Xử lý lỗi 404 - đặt sau routes
 app.all('*', (req, res) => {
   console.log('404 Not Found:', req.method, req.originalUrl);
