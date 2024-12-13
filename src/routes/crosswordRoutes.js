@@ -1,6 +1,6 @@
 import express from 'express';
 import { crosswordController } from '../controllers/crosswordController.js';
-import { authMiddleware } from '../middleware/authMiddleware.js';
+import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -11,10 +11,10 @@ router.use((req, res, next) => {
 });
 
 // Routes
-router.post('/', authMiddleware, crosswordController.create);
-router.get('/', authMiddleware, crosswordController.getAll);
-router.get('/:id', authMiddleware, crosswordController.getById);
-router.put('/:id', authMiddleware, crosswordController.update);
-router.delete('/:id', authMiddleware, crosswordController.delete);
+router.post('/', auth, crosswordController.create);
+// router.get('/', auth, crosswordController.getAll);
+// router.get('/:id', auth, crosswordController.getById);
+// router.put('/:id', auth, crosswordController.update);
+// router.delete('/:id', auth, crosswordController.delete);
 
 export default router;

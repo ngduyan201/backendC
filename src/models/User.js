@@ -56,6 +56,10 @@ const userSchema = new mongoose.Schema({
   lastLoginAt: {
     type: Date,
     default: Date.now
+  },
+  refreshToken: {
+    type: String,
+    select: false
   }
 }, {
   timestamps: true // Tự động thêm createdAt và updatedAt
