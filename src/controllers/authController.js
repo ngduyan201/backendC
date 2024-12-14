@@ -81,35 +81,39 @@ export const login = async (req, res) => {
 
 // Hàm refresh token
 export const refreshToken = async (req, res) => {
+  console.log('🔄 Processing refresh token request...');
   try {
     const { refreshToken } = req.cookies;
 
     if (!refreshToken) {
+      console.log('❌ No refresh token found in cookies');
       return res.status(401).json({
         success: false,
         message: 'Không tìm thấy refresh token'
       });
     }
 
-    // Verify refresh token
+    console.log('🔍 Verifying refresh token...');
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
     
-    // Tìm user
+    console.log('🔍 Finding user...');
     const user = await User.findById(decoded._id);
     if (!user) {
+      console.log('❌ User not found');
       return res.status(401).json({
         success: false,
         message: 'User không tồn tại'
       });
     }
 
-    // Tạo access token mới
+    console.log('✅ Generating new access token...');
     const accessToken = jwt.sign(
       { _id: user._id },
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     );
 
+    console.log('✅ Refresh token process completed successfully');
     return res.json({
       success: true,
       accessToken,
@@ -120,7 +124,7 @@ export const refreshToken = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Refresh token error:', error);
+    console.error('🚫 Refresh token error:', error);
     return res.status(401).json({
       success: false,
       message: 'Refresh token không hợp lệ hoặc đã hết hạn'
