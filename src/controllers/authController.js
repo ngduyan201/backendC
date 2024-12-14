@@ -135,22 +135,31 @@ export const refreshToken = async (req, res) => {
 // Hàm logout
 export const logout = async (req, res) => {
   try {
-    // Xóa refresh token cookie
+    const userId = req.user._id;
+
+    // 1. Xóa refreshToken trong database
+    await User.findByIdAndUpdate(userId, {
+      $unset: { refreshToken: 1 }
+    });
+
+    // 2. Xóa HTTP-only cookie
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: 'strict',
+      path: '/'
     });
 
-    return res.json({
+    res.json({
       success: true,
       message: 'Đăng xuất thành công'
     });
+
   } catch (error) {
     console.error('Logout error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: 'Đã xảy ra lỗi khi đăng xuất'
+      message: 'Lỗi khi đăng xuất'
     });
   }
 };
