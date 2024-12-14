@@ -94,16 +94,29 @@ export const refreshToken = async (req, res) => {
     // Verify refresh token
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
     
+    // Tìm user
+    const user = await User.findById(decoded._id);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User không tồn tại'
+      });
+    }
+
     // Tạo access token mới
     const accessToken = jwt.sign(
-      { _id: decoded._id },
+      { _id: user._id },
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     );
 
     return res.json({
       success: true,
-      accessToken
+      accessToken,
+      user: {
+        _id: user._id,
+        username: user.username
+      }
     });
 
   } catch (error) {
