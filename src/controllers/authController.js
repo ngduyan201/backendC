@@ -1,15 +1,16 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-const generateToken = (id) => {
-    try {
-        return jwt.sign({ id }, process.env.JWT_SECRET, {
-            expiresIn: '30d'
-        });
-    } catch (error) {
-        console.error('Lỗi tạo token:', error);
-        throw new Error('Không thể tạo token');
-    }
+const generateAccessToken = (userId) => {
+  return jwt.sign({ _id: userId }, process.env.JWT_SECRET, {
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRE || '15m'
+  });
+};
+
+const generateRefreshToken = (userId) => {
+  return jwt.sign({ _id: userId }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRE || '7d'
+  });
 };
 
 export const register = async (req, res) => {
@@ -30,7 +31,7 @@ export const register = async (req, res) => {
             });
         }
 
-        // Tạo user mới với status mặc định là 'active'
+        // Tạo user mới
         const user = await User.create({
             username,
             email,
@@ -39,31 +40,23 @@ export const register = async (req, res) => {
             lastLoginAt: new Date()
         });
 
-        // Tạo token
-        const token = generateToken(user._id);
-
-        // Chuẩn bị thông tin user để trả về
-        const userInfo = {
-            id: user._id,
-            username: user.username,
-            email: user.email,
-            status: user.status,
-            createdAt: user.createdAt.toISOString().split('T')[0]
-        };
-
-        // Trả về response
+        // Trả về thông báo thành công
         res.status(201).json({
             success: true,
-            user: userInfo,
-            token
+            message: 'Đăng ký thành công',
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                status: user.status
+            }
         });
 
     } catch (error) {
         console.error('Chi tiết lỗi đăng ký:', error);
         res.status(500).json({
             success: false,
-            message: 'Lỗi server, vui lòng thử lại sau',
-            debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Lỗi server, vui lòng thử lại sau'
         });
     }
 };
@@ -108,12 +101,17 @@ export const login = async (req, res) => {
             });
         }
 
+        // Tạo token mới khi đăng nhập thành công
+        const accessToken = generateAccessToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
+
+        // Lưu refresh token vào user
+        user.refreshToken = refreshToken;
+        await user.save();
+
         // Cập nhật thời gian đăng nhập
         user.lastLoginAt = new Date();
         await user.save();
-
-        // Tạo token
-        const token = generateToken(user._id);
 
         // Chuẩn bị thông tin user để trả về
         const userInfo = {
@@ -132,7 +130,8 @@ export const login = async (req, res) => {
         res.json({
             success: true,
             user: userInfo,
-            token
+            accessToken,
+            refreshToken
         });
 
     } catch (error) {
@@ -145,23 +144,20 @@ export const login = async (req, res) => {
 };
 
 export const logout = async (req, res) => {
-    try {
-        // Cập nhật thời gian đăng xuất
-        await User.findByIdAndUpdate(req.user._id, {
-            lastLogoutAt: new Date()
-        });
+  try {
+    // Xóa refresh token
+    await User.findByIdAndUpdate(req.user._id, {
+      $unset: { refreshToken: 1 },
+      lastLogoutAt: new Date()
+    });
 
-        res.json({
-            success: true,
-            message: 'Đăng xuất thành công'
-        });
-    } catch (error) {
-        console.error('Lỗi đăng xuất:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi server khi đăng xuất'
-        });
-    }
+    res.json({
+      success: true,
+      message: 'Đăng xuất thành công'
+    });
+  } catch (error) {
+    // ... error handling
+  }
 };
 
 export const refreshToken = async (req, res) => {
@@ -178,16 +174,35 @@ export const refreshToken = async (req, res) => {
     // Verify refresh token
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
     
+    // Tìm user và kiểm tra refresh token
+    const user = await User.findOne({ 
+      _id: decoded._id,
+      refreshToken: refreshToken 
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token không hợp lệ'
+      });
+    }
+
     // Tạo token mới
-    const newToken = generateToken(decoded.id);
-    const newRefreshToken = generateRefreshToken(decoded.id);
+    const newAccessToken = generateAccessToken(user._id);
+    const newRefreshToken = generateRefreshToken(user._id);
+
+    // Cập nhật refresh token mới
+    user.refreshToken = newRefreshToken;
+    await user.save();
 
     res.json({
       success: true,
-      token: newToken,
+      accessToken: newAccessToken,
       refreshToken: newRefreshToken
     });
+
   } catch (error) {
+    console.error('Refresh Token Error:', error);
     res.status(401).json({
       success: false,
       message: 'Refresh token không hợp lệ hoặc đã hết hạn'

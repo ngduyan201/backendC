@@ -50,8 +50,8 @@ const crosswordSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Không chia sẻ', 'Chia sẻ'],
-    default: 'Không chia sẻ'
+    enum: ['Không công khai', 'Công khai'],
+    default: 'Không công khai'
   },
   subject: {
     type: String,
