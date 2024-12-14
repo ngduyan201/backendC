@@ -4,10 +4,8 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
-    required: [true, 'Tên đăng nhập là bắt buộc'],
-    unique: true,
-    trim: true,
-    minlength: [3, 'Tên đăng nhập phải có ít nhất 3 ký tự']
+    required: true,
+    unique: true
   },
   email: {
     type: String,
@@ -19,8 +17,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Mật khẩu là bắt buộc'],
-    minlength: [6, 'Mật khẩu phải có ít nhất 6 ký tự'],
+    required: true,
     select: false
   },
   fullName: {
@@ -57,28 +54,38 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  refreshToken: {
-    type: String,
-    select: false
-  }
+  refreshToken: String
 }, {
   timestamps: true // Tự động thêm createdAt và updatedAt
 });
 
 // Middleware trước khi save để mã hóa mật khẩu
 userSchema.pre('save', async function(next) {
-  if (this.isModified('password')) {
+  try {
+    // Chỉ hash password khi nó được thay đổi
+    if (!this.isModified('password')) return next();
+    
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 // Method so sánh mật khẩu
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
-    return await bcrypt.compare(candidatePassword, this.password);
+    // Lấy user với password field
+    const user = await this.constructor.findById(this._id).select('+password');
+    if (!user || !user.password) {
+      throw new Error('Không thể lấy thông tin mật khẩu');
+    }
+    
+    // So sánh password mà không log ra
+    return await bcrypt.compare(candidatePassword, user.password);
   } catch (error) {
+    console.error('Password comparison error');
     throw new Error('Lỗi khi so sánh mật khẩu');
   }
 };

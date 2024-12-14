@@ -3,13 +3,13 @@ import User from '../models/User.js';
 
 const generateAccessToken = (userId) => {
   return jwt.sign({ _id: userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.ACCESS_TOKEN_EXPIRE || '15m'
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRE || '150m'
   });
 };
 
 const generateRefreshToken = (userId) => {
   return jwt.sign({ _id: userId }, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: process.env.REFRESH_TOKEN_EXPIRE || '7d'
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRE || '15d'
   });
 };
 
@@ -62,150 +62,130 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-    try {
-        const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
+    
+    // Log để debug
+    console.log('Login attempt:', { username });
 
-        // Validate input
-        if (!username || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Vui lòng nhập đầy đủ thông tin'
-            });
-        }
-
-        // Tìm user và bao gồm password để so sánh
-        const user = await User.findOne({ username }).select('+password');
-        
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Tài khoản không tồn tại'
-            });
-        }
-
-        // Kiểm tra trạng thái tài khoản
-        if (user.status === 'suspended') {
-            return res.status(403).json({
-                success: false,
-                message: 'Tài khoản đã bị khóa'
-            });
-        }
-
-        // So sánh password
-        const isMatch = await user.comparePassword(password);
-        
-        if (!isMatch) {
-            return res.status(401).json({
-                success: false,
-                message: 'Mật khẩu không đúng'
-            });
-        }
-
-        // Tạo token mới khi đăng nhập thành công
-        const accessToken = generateAccessToken(user._id);
-        const refreshToken = generateRefreshToken(user._id);
-
-        // Lưu refresh token vào user
-        user.refreshToken = refreshToken;
-        await user.save();
-
-        // Cập nhật thời gian đăng nhập
-        user.lastLoginAt = new Date();
-        await user.save();
-
-        // Chuẩn bị thông tin user để trả về
-        const userInfo = {
-            id: user._id,
-            username: user.username,
-            email: user.email,
-            fullName: user.fullName || '',
-            birthDate: user.birthDate ? user.birthDate.toISOString().split('T')[0] : null,
-            occupation: user.occupation || 'Khác',
-            phone: user.phone || '',
-            status: user.status,
-            lastLoginAt: user.lastLoginAt.toISOString().split('T')[0],
-            createdAt: user.createdAt.toISOString().split('T')[0]
-        };
-
-        res.json({
-            success: true,
-            user: userInfo,
-            accessToken,
-            refreshToken
-        });
-
-    } catch (error) {
-        console.error('Chi tiết lỗi đăng nhập:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi server, vui lòng thử lại sau'
-        });
+    // Validate input
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ thông tin'
+      });
     }
+
+    // Tìm user
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Tài khoản không tồn tại'
+      });
+    }
+
+    // Kiểm tra password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Mật khẩu không đúng'
+      });
+    }
+
+    // Trả về response
+    return res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        username: user.username
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Đã xảy ra lỗi, vui lòng thử lại'
+    });
+  }
 };
 
 export const logout = async (req, res) => {
   try {
-    // Xóa refresh token
+    // Xóa refresh token trong DB
     await User.findByIdAndUpdate(req.user._id, {
-      $unset: { refreshToken: 1 },
-      lastLogoutAt: new Date()
+      $unset: { refreshToken: 1 }
     });
 
-    res.json({
+    // Xóa cookies
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+
+    return res.status(200).json({
       success: true,
       message: 'Đăng xuất thành công'
     });
   } catch (error) {
-    // ... error handling
+    // ... xử lý lỗi
   }
 };
 
 export const refreshToken = async (req, res) => {
+  console.log('Cookies received:', req.cookies);
+  
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken;
     
     if (!refreshToken) {
-      return res.status(400).json({
+      console.log('No refresh token found in cookies');
+      return res.status(401).json({
         success: false,
-        message: 'Refresh token không được cung cấp'
+        message: 'No refresh token found'
       });
     }
 
     // Verify refresh token
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
     
-    // Tìm user và kiểm tra refresh token
-    const user = await User.findOne({ 
+    // Kiểm tra token trong DB
+    const user = await User.findOne({
       _id: decoded._id,
-      refreshToken: refreshToken 
+      refreshToken: refreshToken
     });
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Refresh token không hợp lệ'
+        message: 'Token không hợp lệ'
       });
     }
 
-    // Tạo token mới
+    // Tạo access token mới
     const newAccessToken = generateAccessToken(user._id);
-    const newRefreshToken = generateRefreshToken(user._id);
 
-    // Cập nhật refresh token mới
-    user.refreshToken = newRefreshToken;
-    await user.save();
-
-    res.json({
-      success: true,
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken
+    // Set cookie mới
+    res.cookie('accessToken', newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000
     });
 
+    return res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email
+      }
+    });
   } catch (error) {
-    console.error('Refresh Token Error:', error);
-    res.status(401).json({
+    console.error('Refresh token error:', error);
+    return res.status(401).json({
       success: false,
-      message: 'Refresh token không hợp lệ hoặc đã hết hạn'
+      message: error.message
     });
   }
 };

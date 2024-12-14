@@ -1,34 +1,47 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import crosswordRoutes from './routes/crosswordRoutes.js';
 
-dotenv.config();
-
 const app = express();
 
-// Xử lý lỗi không bắt được
-process.on('uncaughtException', (error) => {
-  console.error('Lỗi không bắt được:', error);
-  process.exit(1);
-});
+// Basic middleware
+app.use(express.json());
+app.use(cookieParser());
 
-process.on('unhandledRejection', (error) => {
-  console.error('Promise bị reject:', error);
-  process.exit(1);
-});
+// CORS configuration
+const corsOptions = {
+  origin: 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Set-Cookie']
+};
 
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '30mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(cors(corsOptions));
 
-// Logging middleware để debug route - đặt trước routes
-app.use((req, _, next) => {
-  console.log(`${req.method} ${req.url}`);
+// Safe logging middleware - không log sensitive data
+app.use((req, res, next) => {
+  const safeReq = {
+    method: req.method,
+    url: req.url,
+    headers: {
+      origin: req.headers.origin,
+      'content-type': req.headers['content-type']
+    }
+  };
+  
+  if (req.body) {
+    safeReq.body = { ...req.body };
+    if (safeReq.body.password) {
+      safeReq.body.password = '[HIDDEN]';
+    }
+  }
+  
+  console.log('Request:', safeReq);
   next();
 });
 
@@ -36,33 +49,25 @@ app.use((req, _, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/crosswords', crosswordRoutes);
-// Xử lý lỗi 404 - đặt sau routes
-app.all('*', (req, res) => {
-  console.log('404 Not Found:', req.method, req.originalUrl);
-  res.status(404).json({ 
-    success: false,
-    message: 'Không tìm thấy đường dẫn' 
-  });
-});
 
-// Error handler - luôn đặt cuối cùng
-app.use((err, req, res, _) => {
+// Error handler
+app.use((err, req, res, next) => {
+  // Log error an toàn
   console.error('Error:', {
-    method: req.method,
-    url: req.url,
-    error: err.message,
-    stack: err.stack
+    status: err.status || 500,
+    message: err.message,
+    path: req.path
   });
   
-  res.status(500).json({ 
+  res.status(err.status || 500).json({
     success: false,
-    message: 'Đã xảy ra lỗi server',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: 'Đã xảy ra lỗi server'
   });
 });
 
 const PORT = process.env.PORT || 5001;
 
+// Khởi động server
 const startServer = async () => {
   try {
     await connectDB();
