@@ -3,34 +3,43 @@ import User from '../models/User.js';
 
 export const auth = async (req, res, next) => {
   try {
-    const token = req.cookies.accessToken;
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.accessToken;
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Vui lòng đăng nhập'
+        message: 'Không tìm thấy access token'
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded._id);
+    try {
+      // Verify access token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded._id);
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Người dùng không tồn tại'
-      });
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Người dùng không tồn tại'
+        });
+      }
+
+      req.user = user;
+      next();
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Access token đã hết hạn'
+        });
+      }
+      throw error;
     }
-
-    req.user = user;
-    next();
   } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token đã hết hạn'
-      });
-    }
-    // ... xử lý các lỗi khác
+    console.error('Auth middleware error:', error);
+    return res.status(401).json({
+      success: false,
+      message: 'Xác thực không thành công'
+    });
   }
 }; 

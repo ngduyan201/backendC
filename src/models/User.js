@@ -76,17 +76,9 @@ userSchema.pre('save', async function(next) {
 // Method so sánh mật khẩu
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
-    // Lấy user với password field
-    const user = await this.constructor.findById(this._id).select('+password');
-    if (!user || !user.password) {
-      throw new Error('Không thể lấy thông tin mật khẩu');
-    }
-    
-    // So sánh password mà không log ra
-    return await bcrypt.compare(candidatePassword, user.password);
+    return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
-    console.error('Password comparison error');
-    throw new Error('Lỗi khi so sánh mật khẩu');
+    throw error;
   }
 };
 
