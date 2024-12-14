@@ -3,20 +3,22 @@ import User from '../models/User.js';
 
 export const auth = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1] || req.cookies.accessToken;
+    // Lấy token từ header hoặc cookie
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.refreshToken;
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Không tìm thấy access token'
+        message: 'Không tìm thấy token xác thực'
       });
     }
 
     try {
-      // Verify access token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // Verify token
+      const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+      
+      // Tìm user và không select password
       const user = await User.findById(decoded._id);
-
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -24,13 +26,14 @@ export const auth = async (req, res, next) => {
         });
       }
 
+      // Gán user vào request
       req.user = user;
       next();
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         return res.status(401).json({
           success: false,
-          message: 'Access token đã hết hạn'
+          message: 'Token đã hết hạn'
         });
       }
       throw error;

@@ -4,10 +4,8 @@ import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.use(auth);
-
-router.post('/change-password', changePassword);
-router.get('/profile', getProfile);
-router.put('/profile', updateProfile);
+router.get('/profile', auth, getProfile);
+router.put('/profile', auth, updateProfile);
+router.post('/change-password', auth, changePassword);
 
 export default router; 

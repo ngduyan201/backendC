@@ -114,70 +114,61 @@ export const updateProfile = async (req, res) => {
 
 // Thêm hàm changePassword vào userController
 export const changePassword = async (req, res) => {
-    try {
-        const { currentPassword, newPassword } = req.body;
-        const userId = req.user._id;
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user._id;
 
-        // Validate input
-        if (!currentPassword || !newPassword) {
-            return res.status(400).json({
-                success: false,
-                message: 'Vui lòng điền đầy đủ thông tin'
-            });
-        }
-
-        // Validate độ dài mật khẩu mới
-        if (newPassword.length < 6) {
-            return res.status(400).json({
-                success: false,
-                message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
-            });
-        }
-
-        // Lấy user hiện tại và password
-        const user = await User.findById(userId).select('+password');
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'Không tìm thấy người dùng'
-            });
-        }
-
-        // Kiểm tra mật khẩu hiện tại
-        const isMatch = await user.comparePassword(currentPassword);
-        if (!isMatch) {
-            return res.status(401).json({
-                success: false,
-                message: 'Mật khẩu hiện tại không đúng'
-            });
-        }
-
-        // Kiểm tra mật khẩu mới có giống mật khẩu cũ không
-        const isSamePassword = await user.comparePassword(newPassword);
-        if (isSamePassword) {
-            return res.status(400).json({
-                success: false,
-                message: 'Mật khẩu mới phải khác mật khẩu hiện tại'
-            });
-        }
-
-        // Cập nhật mật khẩu mới
-        user.password = newPassword;
-        await user.save();
-
-        res.json({
-            success: true,
-            message: 'Đổi mật khẩu thành công'
-        });
-
-    } catch (error) {
-        console.error('Lỗi khi đổi mật khẩu:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi server khi đổi mật khẩu'
-        });
+    // Lấy user với password field
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng'
+      });
     }
+
+    // Kiểm tra mật khẩu cũ
+    const isValidPassword = await user.comparePassword(oldPassword);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: 'Mật khẩu hiện tại không đúng'
+      });
+    }
+
+    // Thêm validation cho mật khẩu mới
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+      });
+    }
+
+    // Kiểm tra mật khẩu mới có giống mật khẩu cũ không
+    const isSamePassword = await user.comparePassword(newPassword);
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải khác mật khẩu hiện tại'
+      });
+    }
+
+    // Cập nhật mật khẩu mới
+    user.password = newPassword;
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: 'Đổi mật khẩu thành công'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi đổi mật khẩu'
+    });
+  }
 };
 
 export default {

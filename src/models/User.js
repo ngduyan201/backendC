@@ -61,25 +61,15 @@ const userSchema = new mongoose.Schema({
 
 // Middleware trước khi save để mã hóa mật khẩu
 userSchema.pre('save', async function(next) {
-  try {
-    // Chỉ hash password khi nó được thay đổi
-    if (!this.isModified('password')) return next();
-    
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  if (!this.isModified('password')) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
-// Method so sánh mật khẩu
+// Method so sánh password
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  try {
-    return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
-    throw error;
-  }
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Tạo indexes
