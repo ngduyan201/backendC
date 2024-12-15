@@ -16,7 +16,7 @@ export const getProfile = async (req, res) => {
 
         res.json({
             success: true,
-            user: {
+            data: {
                 fullName: user.fullName || '',
                 birthDate: user.birthDate ? user.birthDate.toISOString().split('T')[0] : '',
                 occupation: user.occupation || 'Khác',
@@ -37,6 +37,12 @@ export const getProfile = async (req, res) => {
 // Cập nhật thông tin profile
 export const updateProfile = async (req, res) => {
     try {
+        console.log('Update Profile Request:', {
+            userId: req.user?._id,
+            body: req.body,
+            headers: req.headers
+        });
+        
         const userId = req.user._id;
         const { fullName, birthDate, occupation, phone } = req.body;
         console.log('Updating profile for user:', userId, 'with data:', req.body);
@@ -88,19 +94,17 @@ export const updateProfile = async (req, res) => {
         }
 
         // Format dữ liệu trước khi gửi về
-        const userInfo = {
-            fullName: updatedUser.fullName || '',
-            birthDate: updatedUser.birthDate ? updatedUser.birthDate.toISOString().split('T')[0] : '',
-            occupation: updatedUser.occupation || 'Khác',
-            phone: updatedUser.phone || '',
-            createdAt: updatedUser.createdAt.toLocaleString('vi-VN'),
-            updatedAt: updatedUser.updatedAt.toLocaleString('vi-VN')
-        };
-
         res.status(200).json({
             success: true,
             message: 'Cập nhật thông tin thành công',
-            user: userInfo
+            data: {
+                fullName: updatedUser.fullName || '',
+                birthDate: updatedUser.birthDate ? updatedUser.birthDate.toISOString().split('T')[0] : '',
+                occupation: updatedUser.occupation || 'Khác',
+                phone: updatedUser.phone || '',
+                createdAt: updatedUser.createdAt.toLocaleString('vi-VN'),
+                updatedAt: updatedUser.updatedAt.toLocaleString('vi-VN')
+            }
         });
 
     } catch (error) {
