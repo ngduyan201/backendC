@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Crossword from '../models/Crossword.js';
 
 // Lấy thông tin profile
 export const getProfile = async (req, res) => {
@@ -91,6 +92,12 @@ export const updateProfile = async (req, res) => {
                 success: false,
                 message: 'Không tìm thấy thông tin người dùng'
             });
+        }
+
+        // Nếu fullName thay đổi, cập nhật tên tác giả trong tất cả ô chữ
+        if (fullName) {
+            const newAuthorName = fullName || updatedUser.username;
+            await Crossword.updateAuthorName(userId, newAuthorName);
         }
 
         // Format dữ liệu trước khi gửi về

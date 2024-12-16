@@ -14,7 +14,7 @@ export const auth = async (req, res, next) => {
     }
 
     try {
-      // Verify token
+      // Verify token và lấy thông tin user
       const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
       
       // Tìm user và không select password

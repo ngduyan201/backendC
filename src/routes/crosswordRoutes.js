@@ -4,10 +4,14 @@ import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Log để debug
+// Middleware log
 router.use((req, res, next) => {
-    console.log('Crossword Route:', req.method, req.path);
-    next();
+  console.log('Crossword Route:', {
+    method: req.method,
+    path: req.path,
+    body: req.method === 'POST' ? req.body : undefined
+  });
+  next();
 });
 
 // Routes

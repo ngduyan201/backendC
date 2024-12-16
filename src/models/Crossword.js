@@ -44,13 +44,13 @@ const crosswordSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  authorName: {  // Thêm trường authorName
+  authorName: {
     type: String,
     required: true
   },
   status: {
     type: String,
-    enum: ['Không công khai', 'Công khai'],
+    enum: ['Công khai', 'Không công khai'],
     default: 'Không công khai'
   },
   subject: {
@@ -100,6 +100,27 @@ crosswordSchema.pre('save', async function(next) {
   }
   next();
 });
+
+crosswordSchema.statics.updateAuthorName = async function(userId, newName) {
+  try {
+    console.log('Updating author name:', { userId, newName });
+    
+    const result = await this.updateMany(
+      { author: userId },
+      { authorName: newName }
+    );
+    
+    console.log('Update result:', {
+      matched: result.matchedCount,
+      modified: result.modifiedCount
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Error updating author name:', error);
+    throw error;
+  }
+};
 
 const Crossword = mongoose.model('Crossword', crosswordSchema);
 
