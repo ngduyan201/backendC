@@ -47,6 +47,17 @@ export const crosswordController = {
         authorName: newCrossword.authorName
       });
 
+      // Set cookie cho phiên tạo ô chữ
+      res.cookie('crosswordSession', {
+        crosswordId: newCrossword._id,
+        action: 'create'
+      }, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 1000, // 1 giờ
+        sameSite: 'strict'
+      });
+
       res.status(201).json({
         success: true,
         message: 'Tạo ô chữ thành công',
@@ -67,6 +78,96 @@ export const crosswordController = {
       res.status(500).json({
         success: false,
         message: 'Có lỗi xảy ra khi tạo ô chữ'
+      });
+    }
+  },
+
+  // Lấy dữ liệu phiên hiện tại
+  getCurrentSession: async (req, res) => {
+    try {
+      const session = req.cookies.crosswordSession;
+      
+      if (!session || !session.crosswordId) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy phiên làm việc'
+        });
+      }
+
+      const crossword = await Crossword.findById(session.crosswordId);
+      
+      if (!crossword) {
+        res.clearCookie('crosswordSession');
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy ô chữ'
+        });
+      }
+
+      // Kiểm tra quyền sở hữu
+      if (crossword.author.toString() !== req.user._id.toString()) {
+        res.clearCookie('crosswordSession');
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền truy cập ô chữ này'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: crossword
+      });
+
+    } catch (error) {
+      console.error('Get session error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy thông tin phiên làm việc'
+      });
+    }
+  },
+
+  // Lưu và kết thúc phiên
+  saveAndEndSession: async (req, res) => {
+    try {
+      const session = req.cookies.crosswordSession;
+      
+      if (!session || !session.crosswordId) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy phiên làm việc'
+        });
+      }
+
+      const { mainKeyword } = req.body;
+      const crossword = await Crossword.findById(session.crosswordId);
+
+      if (!crossword) {
+        res.clearCookie('crosswordSession');
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy ô chữ'
+        });
+      }
+
+      // Cập nhật dữ liệu
+      crossword.mainKeyword = mainKeyword;
+      await crossword.save();
+
+      // Xóa cookie phiên
+      res.clearCookie('crosswordSession');
+
+      res.json({
+        success: true,
+        message: 'Lưu ô chữ thành công',
+        data: crossword
+      });
+
+    } catch (error) {
+      console.error('Save session error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lưu ô chữ'
       });
     }
   }
