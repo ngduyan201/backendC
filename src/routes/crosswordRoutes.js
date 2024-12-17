@@ -19,5 +19,6 @@ router.use((req, res, next) => {
 router.post('/', auth, crosswordController.create);
 router.get('/session', auth, crosswordController.getCurrentSession);
 router.post('/save', auth, crosswordController.saveAndEndSession);
+router.post('/end-session', auth, crosswordController.endSession);
 
 export default router;

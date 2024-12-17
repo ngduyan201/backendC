@@ -170,6 +170,28 @@ export const crosswordController = {
         message: 'Lỗi khi lưu ô chữ'
       });
     }
+  },
+
+  endSession: async (req, res) => {
+    try {
+      // Xóa cookie phiên
+      res.clearCookie('crosswordSession', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Đã kết thúc phiên làm việc'
+      });
+    } catch (error) {
+      console.error('End session error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra khi kết thúc phiên làm việc'
+      });
+    }
   }
 };
 

@@ -14,9 +14,15 @@ const horizontalKeywordSchema = new mongoose.Schema({
     required: true,
     uppercase: true
   },
-  numberOfCharacters: {
+  columnPosition: {
     type: Number,
     required: true
+  },
+  numberOfCharacters: {
+    type: Number,
+    default: function() {
+      return this.answer ? this.answer.length : 0;
+    }
   }
 });
 
@@ -65,7 +71,8 @@ const crosswordSchema = new mongoose.Schema({
   },
   timesPlayed: {
     type: Number,
-    default: 0
+    default: 0,
+    min: 0
   },
   mainKeyword: [mainKeywordSchema]
 }, {
@@ -77,12 +84,6 @@ crosswordSchema.index({
   subject: 1, 
   gradeLevel: 1, 
   title: 1 
-});
-
-// Middleware tự động tính numberOfCharacters
-horizontalKeywordSchema.pre('save', function(next) {
-  this.numberOfCharacters = this.answer.length;
-  next();
 });
 
 // Middleware tự động lấy tên tác giả từ User model
@@ -101,6 +102,7 @@ crosswordSchema.pre('save', async function(next) {
   next();
 });
 
+// Static method để cập nhật tên tác giả
 crosswordSchema.statics.updateAuthorName = async function(userId, newName) {
   try {
     console.log('Updating author name:', { userId, newName });

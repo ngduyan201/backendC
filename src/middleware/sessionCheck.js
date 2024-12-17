@@ -6,10 +6,11 @@ export const checkCrosswordSession = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: 'Phiên làm việc không hợp lệ hoặc đã hết hạn',
-        redirect: '/create-new'
+        redirect: true
       });
     }
 
+    req.crosswordSession = session;
     next();
   } catch (error) {
     console.error('Session check error:', error);
