@@ -192,6 +192,71 @@ export const crosswordController = {
         message: 'Có lỗi xảy ra khi kết thúc phiên làm việc'
       });
     }
+  },
+
+  saveCrossword: async (req, res) => {
+    try {
+      const { mainKeyword } = req.body;
+      const session = req.cookies.crosswordSession;
+
+      if (!session || !session.crosswordId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Không tìm thấy phiên làm việc'
+        });
+      }
+
+      // Validate dữ liệu đầu vào
+      if (!mainKeyword || !Array.isArray(mainKeyword) || mainKeyword.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Dữ liệu ô chữ không hợp lệ'
+        });
+      }
+
+      // Validate từ khóa chính và các câu hỏi
+      const keywordData = mainKeyword[0];
+      if (!keywordData.keyword || !Array.isArray(keywordData.associatedHorizontalKeywords)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cấu trúc dữ liệu không hợp lệ'
+        });
+      }
+
+      // Tìm và cập nhật crossword
+      const crossword = await Crossword.findById(session.crosswordId);
+      if (!crossword) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy ô chữ'
+        });
+      }
+
+      // Cập nhật dữ liệu
+      crossword.mainKeyword = mainKeyword;
+      await crossword.save();
+
+      // Xóa cookie session sau khi lưu thành công
+      res.clearCookie('crosswordSession', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Lưu ô chữ thành công',
+        data: crossword
+      });
+
+    } catch (error) {
+      console.error('Save crossword error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lưu ô chữ',
+        error: error.message
+      });
+    }
   }
 };
 

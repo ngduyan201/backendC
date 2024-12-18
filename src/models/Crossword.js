@@ -32,10 +32,6 @@ const mainKeywordSchema = new mongoose.Schema({
     required: true,
     uppercase: true
   },
-  verticalPosition: {
-    type: Number,
-    required: true
-  },
   associatedHorizontalKeywords: [horizontalKeywordSchema]
 });
 
