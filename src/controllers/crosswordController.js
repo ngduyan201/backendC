@@ -257,6 +257,54 @@ export const crosswordController = {
         error: error.message
       });
     }
+  },
+
+  getUserCrosswords: async (req, res) => {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 6;
+      const userId = req.user._id;
+
+      const skip = (page - 1) * limit;
+      
+      // Đếm tổng số documents
+      const total = await Crossword.countDocuments({ author: userId });
+      
+      // Tính tổng số trang
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      
+      const crosswords = await Crossword.find({ author: userId })
+        .populate('author', 'fullName')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      const formattedCrosswords = crosswords.map(crossword => ({
+        _id: crossword._id,
+        title: crossword.title || 'Ô chữ không có tên',
+        questionCount: crossword.mainKeyword[0]?.keyword?.length || 0,
+        author: crossword.author?.fullName || 'Ẩn danh'
+      }));
+
+      res.json({
+        success: true,
+        data: formattedCrosswords,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: total,
+          limit
+        }
+      });
+
+    } catch (error) {
+      console.error('Get user crosswords error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy danh sách ô chữ',
+        error: error.message
+      });
+    }
   }
 };
 
