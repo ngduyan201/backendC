@@ -379,6 +379,44 @@ export const crosswordController = {
         message: 'Lỗi khi cập nhật thông tin ô chữ'
       });
     }
+  },
+
+  startEditSession: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const crossword = await Crossword.findById(id);
+      
+      if (!crossword) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy ô chữ'
+        });
+      }
+
+      // Set cookie phiên chỉnh sửa
+      res.cookie('crosswordSession', {
+        crosswordId: id,
+        action: 'edit'
+      }, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 1000, // 1 giờ
+        sameSite: 'strict'
+      });
+
+      // Trả về toàn bộ dữ liệu mainKeyword
+      res.json({
+        success: true,
+        data: crossword.mainKeyword
+      });
+
+    } catch (error) {
+      console.error('Start edit session error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra khi bắt đầu phiên chỉnh sửa'
+      });
+    }
   }
 };
 
