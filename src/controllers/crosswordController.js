@@ -283,7 +283,10 @@ export const crosswordController = {
         _id: crossword._id,
         title: crossword.title || 'Ô chữ không có tên',
         questionCount: crossword.mainKeyword[0]?.keyword?.length || 0,
-        author: crossword.author?.fullName || 'Ẩn danh'
+        author: crossword.author?.fullName || 'Ẩn danh',
+        status: crossword.status,
+        subject: crossword.subject,
+        grade: crossword.gradeLevel
       }));
 
       res.json({
@@ -303,6 +306,77 @@ export const crosswordController = {
         success: false,
         message: 'Lỗi khi lấy danh sách ô chữ',
         error: error.message
+      });
+    }
+  },
+
+  updateCrossword: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title, status, subject, grade } = req.body;
+      const userId = req.user._id;
+
+      // Validate input
+      if (!title || !status || !subject || !grade) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vui lòng điền đầy đủ thông tin'
+        });
+      }
+
+      // Validate status
+      if (!['Công khai', 'Không công khai'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Trạng thái không hợp lệ'
+        });
+      }
+
+      // Tìm ô chữ và kiểm tra quyền sở hữu
+      const crossword = await Crossword.findOne({ _id: id, author: userId });
+      
+      if (!crossword) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy ô chữ hoặc bạn không có quyền chỉnh sửa'
+        });
+      }
+
+      // Cập nhật thông tin
+      crossword.title = title;
+      crossword.status = status;
+      crossword.subject = subject;
+      crossword.gradeLevel = grade;
+
+      await crossword.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Cập nhật thông tin ô chữ thành công',
+        data: {
+          _id: crossword._id,
+          title: crossword.title,
+          status: crossword.status,
+          subject: crossword.subject,
+          grade: crossword.gradeLevel,
+          author: crossword.authorName,
+          questionCount: crossword.mainKeyword[0]?.associatedHorizontalKeywords?.length || 0
+        }
+      });
+
+    } catch (error) {
+      console.error('Update crossword error:', error);
+      
+      if (error.name === 'ValidationError') {
+        return res.status(400).json({
+          success: false,
+          message: Object.values(error.errors).map(err => err.message).join(', ')
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi khi cập nhật thông tin ô chữ'
       });
     }
   }
