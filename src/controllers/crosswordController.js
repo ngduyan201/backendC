@@ -472,14 +472,21 @@ export const crosswordController = {
       }, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 2 * 60 * 60 * 500, // 1 giờ
+        maxAge: 2 * 60 * 60 * 500,
         sameSite: 'strict'
       });
 
-      // Trả về dữ liệu mainKeyword
+      // Lấy số câu hỏi từ độ dài của keyword
+      const numberOfQuestions = crossword.mainKeyword[0]?.keyword?.length || 0;
+
+      // Trả về title, mainKeyword và số câu hỏi
       res.json({
         success: true,
-        data: crossword.mainKeyword
+        data: {
+          title: crossword.title,
+          mainKeyword: crossword.mainKeyword,
+          numberOfQuestions
+        }
       });
 
     } catch (error) {
