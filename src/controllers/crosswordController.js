@@ -392,7 +392,6 @@ export const crosswordController = {
         success: true,
         data: crossword.mainKeyword
       });
-      console.log('Data trả về:', crossword.mainKeyword);
 
     } catch (error) {
       console.error('Start edit session error:', error);
@@ -488,6 +487,28 @@ export const crosswordController = {
       res.status(500).json({
         success: false,
         message: 'Có lỗi xảy ra khi bắt đầu phiên chơi'
+      });
+    }
+  },
+
+  clearPlaySession: async (req, res) => {
+    try {
+      // Xóa cookie phiên chơi
+      res.clearCookie('playSession', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Đã kết thúc phiên chơi'
+      });
+    } catch (error) {
+      console.error('Clear play session error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra khi kết thúc phiên chơi'
       });
     }
   }
