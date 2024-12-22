@@ -261,23 +261,12 @@ export const crosswordController = {
 
   getUserCrosswords: async (req, res) => {
     try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 6;
       const userId = req.user._id;
-
-      const skip = (page - 1) * limit;
       
-      // Đếm tổng số documents
-      const total = await Crossword.countDocuments({ author: userId });
-      
-      // Tính tổng số trang
-      const totalPages = Math.max(1, Math.ceil(total / limit));
-      
+      // Lấy tất cả crosswords của user, không cần phân trang
       const crosswords = await Crossword.find({ author: userId })
         .populate('author', 'fullName')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit);
+        .sort({ createdAt: -1 });
 
       const formattedCrosswords = crosswords.map(crossword => ({
         _id: crossword._id,
@@ -291,13 +280,7 @@ export const crosswordController = {
 
       res.json({
         success: true,
-        data: formattedCrosswords,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalItems: total,
-          limit
-        }
+        data: formattedCrosswords
       });
 
     } catch (error) {
