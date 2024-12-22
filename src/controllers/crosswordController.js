@@ -402,7 +402,7 @@ export const crosswordController = {
     }
   },
 
-  getLibraryCrosswords: async (req, res) => {
+  getLibraryCrosswords: async (_req, res) => {
     try {
       // Lấy 5 ô chữ ngẫu nhiên có trạng thái "Công khai"
       const randomCrosswords = await Crossword.aggregate([
@@ -412,7 +412,7 @@ export const crosswordController = {
 
       // Lấy 5 ô chữ được chơi nhiều nhất (giả sử có field playCount)
       const mostPlayedCrosswords = await Crossword.find({ status: "Công khai" })
-        .sort({ playCount: -1 })
+        .sort({ timesPlayed: -1 })
         .limit(5);
 
       // Lấy 5 ô chữ mới nhất
@@ -447,6 +447,46 @@ export const crosswordController = {
       res.status(500).json({
         success: false,
         message: 'Lỗi khi lấy danh sách ô chữ thư viện'
+      });
+    }
+  },
+
+  startPlay: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { mode } = req.body;
+
+      const crossword = await Crossword.findById(id);
+      if (!crossword) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy ô chữ'
+        });
+      }
+
+      // Set cookie cho phiên chơi
+      res.cookie('playSession', {
+        crosswordId: id,
+        mode: mode,
+        startTime: new Date()
+      }, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 2 * 60 * 60 * 500, // 1 giờ
+        sameSite: 'strict'
+      });
+
+      // Trả về dữ liệu mainKeyword
+      res.json({
+        success: true,
+        data: crossword.mainKeyword
+      });
+
+    } catch (error) {
+      console.error('Start play error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra khi bắt đầu phiên chơi'
       });
     }
   }
