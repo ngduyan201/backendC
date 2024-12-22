@@ -392,6 +392,7 @@ export const crosswordController = {
         success: true,
         data: crossword.mainKeyword
       });
+      console.log('Data trả về:', crossword.mainKeyword);
 
     } catch (error) {
       console.error('Start edit session error:', error);
