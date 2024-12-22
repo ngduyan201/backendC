@@ -400,6 +400,55 @@ export const crosswordController = {
         message: 'Có lỗi xảy ra khi bắt đầu phiên chỉnh sửa'
       });
     }
+  },
+
+  getLibraryCrosswords: async (req, res) => {
+    try {
+      // Lấy 5 ô chữ ngẫu nhiên có trạng thái "Công khai"
+      const randomCrosswords = await Crossword.aggregate([
+        { $match: { status: "Công khai" } },
+        { $sample: { size: 5 } }
+      ]);
+
+      // Lấy 5 ô chữ được chơi nhiều nhất (giả sử có field playCount)
+      const mostPlayedCrosswords = await Crossword.find({ status: "Công khai" })
+        .sort({ playCount: -1 })
+        .limit(5);
+
+      // Lấy 5 ô chữ mới nhất
+      const newestCrosswords = await Crossword.find({ status: "Công khai" })
+        .sort({ createdAt: -1 })
+        .limit(5);
+
+      // Format dữ liệu trước khi trả về
+      const formatCrosswords = (crosswords) => {
+        return crosswords.map(crossword => ({
+          _id: crossword._id,
+          title: crossword.title || 'Ô chữ không có tên',
+          questionCount: crossword.mainKeyword[0]?.associatedHorizontalKeywords?.length || 0,
+          author: crossword.authorName || 'Ẩn danh',
+          grade: crossword.gradeLevel,
+          subject: crossword.subject,
+          createdAt: crossword.createdAt
+        }));
+      };
+
+      res.json({
+        success: true,
+        data: {
+          random: formatCrosswords(randomCrosswords),
+          mostPlayed: formatCrosswords(mostPlayedCrosswords),
+          newest: formatCrosswords(newestCrosswords)
+        }
+      });
+
+    } catch (error) {
+      console.error('Get library crosswords error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy danh sách ô chữ thư viện'
+      });
+    }
   }
 };
 

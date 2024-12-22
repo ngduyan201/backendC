@@ -24,5 +24,6 @@ router.post('/save-crossword', auth, crosswordController.saveCrossword);
 router.get('/user', auth, crosswordController.getUserCrosswords);
 router.put('/:id', auth, crosswordController.updateCrossword);
 router.post('/edit/:id', auth, crosswordController.startEditSession);
+router.get('/library', auth, crosswordController.getLibraryCrosswords);
 
 export default router;
