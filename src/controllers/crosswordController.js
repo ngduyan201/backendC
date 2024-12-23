@@ -483,9 +483,9 @@ export const crosswordController = {
         throw new Error('Missing encryption key');
       }
 
-      // Mã hóa câu trả lời trước khi gửi về client
+      // Mã hóa cả keyword và câu trả lời trước khi gửi về client
       const encryptedMainKeyword = crossword.mainKeyword.map(mk => ({
-        keyword: mk.keyword,
+        keyword: CryptoJS.AES.encrypt(mk.keyword, key).toString(),
         associatedHorizontalKeywords: mk.associatedHorizontalKeywords.map(hw => ({
           questionNumber: hw.questionNumber,
           questionContent: hw.questionContent,
