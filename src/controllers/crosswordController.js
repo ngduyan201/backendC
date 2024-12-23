@@ -1,4 +1,5 @@
 import Crossword from '../models/Crossword.js';
+import CryptoJS from 'crypto-js';
 
 export const crosswordController = {
   create: async (req, res) => {
@@ -476,16 +477,31 @@ export const crosswordController = {
         sameSite: 'strict'
       });
 
-      // Lấy số câu hỏi từ độ dài của keyword
-      const numberOfQuestions = crossword.mainKeyword[0]?.keyword?.length || 0;
+      // Lấy secretKey từ cùng logic với hàm GetSecretKey
+      const key = process.env.ANSWER_ENCRYPTION_KEY || 'your-secret-key';
+      if (!key) {
+        throw new Error('Missing encryption key');
+      }
 
-      // Trả về title, mainKeyword và số câu hỏi
+      // Mã hóa câu trả lời trước khi gửi về client
+      const encryptedMainKeyword = crossword.mainKeyword.map(mk => ({
+        keyword: mk.keyword,
+        associatedHorizontalKeywords: mk.associatedHorizontalKeywords.map(hw => ({
+          questionNumber: hw.questionNumber,
+          questionContent: hw.questionContent,
+          answer: CryptoJS.AES.encrypt(hw.answer, key).toString(),
+          columnPosition: hw.columnPosition,
+          numberOfCharacters: hw.answer.length
+        }))
+      }));
+
+      // Trả về dữ liệu đã mã hóa
       res.json({
         success: true,
         data: {
           title: crossword.title,
-          mainKeyword: crossword.mainKeyword,
-          numberOfQuestions
+          mainKeyword: encryptedMainKeyword,
+          numberOfQuestions: crossword.mainKeyword[0]?.keyword?.length || 0
         }
       });
 
@@ -518,7 +534,30 @@ export const crosswordController = {
         message: 'Có lỗi xảy ra khi kết thúc phiên chơi'
       });
     }
-  }
+  },
+
+  // Hàm API endpoint GetSecretKey
+  GetSecretKey: async (req, res) => {
+    try {
+      const key = process.env.ANSWER_ENCRYPTION_KEY || 'your-secret-key';
+      if (!key) {
+        throw new Error('Missing encryption key');
+      }
+
+      res.json({
+        success: true,
+        data: {
+          secretKey: key
+        }
+      });
+    } catch (error) {
+      console.error('Get secret key error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra khi lấy secret key'
+      });
+    }
+  },
 };
 
 export const getCrossword = async (req, res) => {
