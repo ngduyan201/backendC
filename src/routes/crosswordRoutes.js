@@ -28,5 +28,6 @@ router.get('/library', auth, crosswordController.getLibraryCrosswords);
 router.post('/play/:id', auth, crosswordController.startPlay);
 router.post('/clear-session', auth, crosswordController.clearPlaySession);
 router.get('/get-secret-key', auth, crosswordController.GetSecretKey);
+router.delete('/:id', auth, crosswordController.deleteCrossword);
 
 export default router;

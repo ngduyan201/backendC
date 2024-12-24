@@ -558,6 +558,38 @@ export const crosswordController = {
       });
     }
   },
+
+  deleteCrossword: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user._id;
+
+      // Tìm và kiểm tra quyền sở hữu
+      const crossword = await Crossword.findOne({ _id: id, author: userId });
+      
+      if (!crossword) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy ô chữ hoặc bạn không có quyền xóa'
+        });
+      }
+
+      // Thực hiện xóa
+      await Crossword.findByIdAndDelete(id);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Xóa ô chữ thành công'
+      });
+
+    } catch (error) {
+      console.error('Delete crossword error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra khi xóa ô chữ'
+      });
+    }
+  },
 };
 
 export const getCrossword = async (req, res) => {
