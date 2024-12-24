@@ -39,7 +39,7 @@ const crosswordSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
-    index: true // Index cho title
+    index: true 
   },
   author: {
     type: mongoose.Schema.Types.ObjectId,
@@ -48,7 +48,8 @@ const crosswordSchema = new mongoose.Schema({
   },
   authorName: {
     type: String,
-    required: true
+    required: true,
+    index: true
   },
   status: {
     type: String,
@@ -58,12 +59,12 @@ const crosswordSchema = new mongoose.Schema({
   subject: {
     type: String,
     required: true,
-    index: true // Index cho subject
+    index: true 
   },
   gradeLevel: {
     type: String,
     required: true,
-    index: true // Index cho gradeLevel
+    index: true 
   },
   timesPlayed: {
     type: Number,

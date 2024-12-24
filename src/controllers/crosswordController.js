@@ -590,6 +590,77 @@ export const crosswordController = {
       });
     }
   },
+
+  search: async (req, res) => {
+    try {
+      const { query, subject, grade, page = 1, limit = 9 } = req.query;
+      
+      // Xây dựng query object
+      const searchQuery = {
+        status: 'Công khai' // Chỉ tìm các ô chữ công khai
+      };
+
+      // Thêm điều kiện tìm kiếm nếu có
+      if (query) {
+        searchQuery.$or = [
+          { title: { $regex: query, $options: 'i' } },
+          { authorName: { $regex: query, $options: 'i' } }
+        ];
+      }
+
+      if (subject) {
+        searchQuery.subject = subject;
+      }
+
+      if (grade) {
+        searchQuery.gradeLevel = grade;
+      }
+
+      // Tính skip cho phân trang
+      const skip = (page - 1) * limit;
+
+      // Thực hiện query với phân trang
+      const [crosswords, total] = await Promise.all([
+        Crossword.find(searchQuery)
+          .select('title subject gradeLevel authorName mainKeyword createdAt timesPlayed')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        Crossword.countDocuments(searchQuery)
+      ]);
+
+      // Tính toán số trang
+      const totalPages = Math.ceil(total / limit);
+
+      // Format lại dữ liệu trước khi trả về
+      const formattedCrosswords = crosswords.map(c => ({
+        _id: c._id,
+        title: c.title,
+        subject: c.subject,
+        grade: c.gradeLevel,
+        author: c.authorName,
+        questionCount: c.mainKeyword[0]?.associatedHorizontalKeywords?.length || 0,
+        timesPlayed: c.timesPlayed || 0,
+        createdAt: c.createdAt
+      }));
+
+      return res.json({
+        success: true,
+        data: {
+          crosswords: formattedCrosswords,
+          totalPages,
+          totalResults: total
+        }
+      });
+
+    } catch (error) {
+      console.error('Search crosswords error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra khi tìm kiếm ô chữ'
+      });
+    }
+  }
 };
 
 export const getCrossword = async (req, res) => {
