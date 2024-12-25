@@ -276,7 +276,8 @@ export const crosswordController = {
         author: crossword.author?.fullName || 'Ẩn danh',
         status: crossword.status,
         subject: crossword.subject,
-        grade: crossword.gradeLevel
+        grade: crossword.gradeLevel,
+        timesPlayed: crossword.timesPlayed || 0
       }));
 
       res.json({
@@ -344,7 +345,8 @@ export const crosswordController = {
           subject: crossword.subject,
           grade: crossword.gradeLevel,
           author: crossword.authorName,
-          questionCount: crossword.mainKeyword[0]?.associatedHorizontalKeywords?.length || 0
+          questionCount: crossword.mainKeyword[0]?.associatedHorizontalKeywords?.length || 0,
+          timesPlayed: crossword.timesPlayed || 0
         }
       });
 
@@ -430,7 +432,8 @@ export const crosswordController = {
           author: crossword.authorName || 'Ẩn danh',
           grade: crossword.gradeLevel,
           subject: crossword.subject,
-          createdAt: crossword.createdAt
+          createdAt: crossword.createdAt,
+          timesPlayed: crossword.timesPlayed || 0
         }));
       };
 
@@ -465,6 +468,10 @@ export const crosswordController = {
         });
       }
 
+      // Tăng số lần chơi
+      crossword.timesPlayed = (crossword.timesPlayed || 0) + 1;
+      await crossword.save();
+
       // Set cookie cho phiên chơi
       res.cookie('playSession', {
         crosswordId: id,
@@ -473,7 +480,7 @@ export const crosswordController = {
       }, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 2 * 60 * 60 * 500,
+        maxAge: 2 * 60 * 60 * 500, // 1 giờ
         sameSite: 'strict'
       });
 
@@ -491,7 +498,8 @@ export const crosswordController = {
           questionContent: hw.questionContent,
           answer: CryptoJS.AES.encrypt(hw.answer, key).toString(),
           columnPosition: hw.columnPosition,
-          numberOfCharacters: hw.answer.length
+          numberOfCharacters: hw.answer.length,
+          timesPlayed: hw.timesPlayed || 0
         }))
       }));
 
