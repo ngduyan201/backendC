@@ -29,6 +29,20 @@ export const crosswordController = {
         });
       }
 
+      // Kiểm tra tên trùng trước khi tạo
+      const existingCrossword = await Crossword.findOne({ 
+        title: { 
+          $regex: new RegExp(`^${title}$`, 'i')
+        }
+      });
+
+      if (existingCrossword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tên ô chữ đã tồn tại'
+        });
+      }
+
       // Tạo ô chữ mới với thông tin tác giả đầy đủ
       const newCrossword = new Crossword({
         title,
@@ -666,6 +680,32 @@ export const crosswordController = {
       return res.status(500).json({
         success: false,
         message: 'Có lỗi xảy ra khi tìm kiếm ô chữ'
+      });
+    }
+  },
+
+  // Thêm function kiểm tra tên trùng
+  checkDuplicateTitle: async (req, res) => {
+    try {
+      const { title } = req.body;
+      
+      // Tìm ô chữ có cùng tên
+      const existingCrossword = await Crossword.findOne({ 
+        title: { 
+          $regex: new RegExp(`^${title}$`, 'i') // Case insensitive search
+        }
+      });
+
+      return res.json({
+        success: true,
+        isDuplicate: !!existingCrossword
+      });
+
+    } catch (error) {
+      console.error('Check duplicate title error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra khi kiểm tra tên ô chữ'
       });
     }
   }
