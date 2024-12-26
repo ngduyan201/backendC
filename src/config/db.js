@@ -13,7 +13,7 @@ export const connectDB = async () => {
     });
 
     try {
-        const mongoURI = `mongodb://${DB_HOST}:${DB_PORT}/${DB_NAME}`;
+        const mongoURI = process.env.MONGO_URI || `mongodb://${DB_HOST}:${DB_PORT}/${DB_NAME}`;
         
         await mongoose.connect(mongoURI, {
             useNewUrlParser: true,
