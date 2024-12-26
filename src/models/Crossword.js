@@ -71,6 +71,10 @@ const crosswordSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  isCompleted: {
+    type: Boolean,
+    default: false
+  },
   mainKeyword: [mainKeywordSchema]
 }, {
   timestamps: true

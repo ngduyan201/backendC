@@ -247,8 +247,9 @@ export const crosswordController = {
         });
       }
 
-      // Cập nhật dữ liệu
+      // Cập nhật dữ liệu và đánh dấu là đã hoàn thành
       crossword.mainKeyword = mainKeyword;
+      crossword.isCompleted = true;
       await crossword.save();
 
       // Xóa cookie session sau khi lưu thành công
@@ -421,19 +422,29 @@ export const crosswordController = {
 
   getLibraryCrosswords: async (_req, res) => {
     try {
-      // Lấy 5 ô chữ ngẫu nhiên có trạng thái "Công khai"
+      // Thêm điều kiện isCompleted: true vào match
       const randomCrosswords = await Crossword.aggregate([
-        { $match: { status: "Công khai" } },
+        { 
+          $match: { 
+            status: "Công khai",
+            isCompleted: true  // Thêm điều kiện này
+          } 
+        },
         { $sample: { size: 5 } }
       ]);
 
-      // Lấy 5 ô chữ được chơi nhiều nhất (giả sử có field playCount)
-      const mostPlayedCrosswords = await Crossword.find({ status: "Công khai" })
+      // Thêm điều kiện isCompleted vào các query khác
+      const mostPlayedCrosswords = await Crossword.find({ 
+        status: "Công khai",
+        isCompleted: true  // Thêm điều kiện này
+      })
         .sort({ timesPlayed: -1 })
         .limit(5);
 
-      // Lấy 5 ô chữ mới nhất
-      const newestCrosswords = await Crossword.find({ status: "Công khai" })
+      const newestCrosswords = await Crossword.find({ 
+        status: "Công khai",
+        isCompleted: true  // Thêm điều kiện này
+      })
         .sort({ createdAt: -1 })
         .limit(5);
 
@@ -617,9 +628,10 @@ export const crosswordController = {
     try {
       const { query, subject, grade, page = 1, limit = 9 } = req.query;
       
-      // Xây dựng query object
+      // Thêm điều kiện isCompleted vào searchQuery
       const searchQuery = {
-        status: 'Công khai' // Chỉ tìm các ô chữ công khai
+        status: 'Công khai',
+        isCompleted: true  // Thêm điều kiện này
       };
 
       // Thêm điều kiện tìm kiếm nếu có
