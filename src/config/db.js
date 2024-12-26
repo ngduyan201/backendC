@@ -4,12 +4,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const connectDB = async () => {
-    const { DB_HOST, DB_PORT, DB_NAME } = process.env;
+    const { DB_HOST, DB_PORT, DB_NAME, MONGO_URI } = process.env;
 
     console.log('Đang kết nối đến MongoDB:', {
         host: DB_HOST,
         port: DB_PORT,
-        database: DB_NAME
+        database: DB_NAME,
+        mongoURI: MONGO_URI
     });
 
     try {
