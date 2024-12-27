@@ -62,15 +62,16 @@ export const crosswordController = {
         authorName: newCrossword.authorName
       });
 
-      // Set cookie cho phiên tạo ô chữ
+      // Cập nhật cookie options cho phù hợp với production
       res.cookie('crosswordSession', {
         crosswordId: newCrossword._id,
         action: 'create'
       }, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true, // Bật secure cho HTTPS
+        sameSite: 'none', // Cho phép cross-site
         maxAge: 60 * 60 * 1000, // 1 giờ
-        sameSite: 'strict'
+        path: '/' // Đảm bảo cookie có thể truy cập từ mọi route
       });
 
       res.status(201).json({
@@ -497,16 +498,17 @@ export const crosswordController = {
       crossword.timesPlayed = (crossword.timesPlayed || 0) + 1;
       await crossword.save();
 
-      // Set cookie cho phiên chơi
+      // Cập nhật cookie options cho phù hợp với production
       res.cookie('playSession', {
         crosswordId: id,
         mode: mode,
         startTime: new Date()
       }, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 2 * 60 * 60 * 500, // 1 giờ
-        sameSite: 'strict'
+        secure: true, // Bật secure cho HTTPS
+        sameSite: 'none', // Cho phép cross-site
+        maxAge: 2 * 60 * 60 * 1000, // 2 giờ
+        path: '/' // Đảm bảo cookie có thể truy cập từ mọi route
       });
 
       // Lấy secretKey từ cùng logic với hàm GetSecretKey
