@@ -52,18 +52,21 @@ export const login = async (req, res) => {
     // Tạo tokens
     const { accessToken, refreshToken } = generateTokens(user._id);
 
-    // Lưu refresh token vào cookie
+    // Log để debug
+    console.log('Generated tokens:', { accessToken, refreshToken });
+
+    // Lưu refresh token vào cookie với các options phù hợp
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true, // Bật secure vì đang dùng HTTPS
+      sameSite: 'none', // Thay đổi thành 'none' để cho phép cross-site
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày
     });
 
-    // Trả về response với access token
+    // Trả về response với access token và thông tin user
     return res.status(200).json({
       success: true,
-      accessToken,
+      accessToken, // Access token để lưu vào localStorage
       user: {
         _id: user._id,
         username: user.username
