@@ -1,6 +1,15 @@
 import Crossword from '../models/Crossword.js';
 import CryptoJS from 'crypto-js';
 
+// Cấu hình cookie chung
+const cookieConfig = {
+  httpOnly: true,         // Chỉ truy cập từ server
+  secure: true,           // Chỉ gửi qua HTTPS
+  sameSite: 'none',       // Hỗ trợ cross-origin
+  path: '/',             // Có thể truy cập từ mọi route
+  maxAge: 2 * 60 * 60 * 1000, // 2 giờ
+};
+
 export const crosswordController = {
   create: async (req, res) => {
     try {
@@ -66,13 +75,7 @@ export const crosswordController = {
       res.cookie('crosswordSession', {
         crosswordId: newCrossword._id,
         action: 'create'
-      }, {
-        httpOnly: true,
-        secure: true, // Bật secure cho HTTPS
-        sameSite: 'none', // Cho phép cross-site
-        maxAge: 60 * 60 * 1000, // 1 giờ
-        path: '/' // Đảm bảo cookie có thể truy cập từ mọi route
-      });
+      }, cookieConfig);
 
       res.status(201).json({
         success: true,
@@ -171,7 +174,10 @@ export const crosswordController = {
       await crossword.save();
 
       // Xóa cookie phiên
-      res.clearCookie('crosswordSession');
+      res.clearCookie('crosswordSession', {
+        ...cookieConfig,
+        maxAge: 0
+      });
 
       res.json({
         success: true,
@@ -190,11 +196,9 @@ export const crosswordController = {
 
   endSession: async (req, res) => {
     try {
-      // Xóa cookie phiên
       res.clearCookie('crosswordSession', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...cookieConfig,
+        maxAge: 0
       });
 
       return res.status(200).json({
@@ -255,9 +259,8 @@ export const crosswordController = {
 
       // Xóa cookie session sau khi lưu thành công
       res.clearCookie('crosswordSession', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...cookieConfig,
+        maxAge: 0
       });
 
       return res.status(200).json({
@@ -399,12 +402,7 @@ export const crosswordController = {
       res.cookie('crosswordSession', {
         crosswordId: id,
         action: 'edit'
-      }, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 1000, // 1 giờ
-        sameSite: 'strict'
-      });
+      }, cookieConfig);
 
       // Trả về toàn bộ dữ liệu mainKeyword
       res.json({
@@ -503,13 +501,7 @@ export const crosswordController = {
         crosswordId: id,
         mode: mode,
         startTime: new Date()
-      }, {
-        httpOnly: true,
-        secure: true, // Bật secure cho HTTPS
-        sameSite: 'none', // Cho phép cross-site
-        maxAge: 2 * 60 * 60 * 1000, // 2 giờ
-        path: '/' // Đảm bảo cookie có thể truy cập từ mọi route
-      });
+      }, cookieConfig);
 
       // Lấy secretKey từ cùng logic với hàm GetSecretKey
       const key = process.env.ANSWER_ENCRYPTION_KEY || 'your-secret-key';
@@ -551,11 +543,9 @@ export const crosswordController = {
 
   clearPlaySession: async (req, res) => {
     try {
-      // Xóa cookie phiên chơi
       res.clearCookie('playSession', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...cookieConfig,
+        maxAge: 0  // Set maxAge = 0 để xóa cookie
       });
 
       return res.status(200).json({
