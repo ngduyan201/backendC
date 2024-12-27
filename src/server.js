@@ -14,7 +14,7 @@ app.use(cookieParser());
 
 // CORS configuration
 const corsOptions = {
-  origin: 'https://ochuvn.vercel.app/',
+  origin: 'https://ochuvn.vercel.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
