@@ -63,6 +63,10 @@ const userSchema = new mongoose.Schema({
       default: 0
     },
     lastCompletedAt: Date
+  },
+  publicCrosswordCount: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true // Tự động thêm createdAt và updatedAt
@@ -85,6 +89,47 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 userSchema.index({ email: 1 });
 userSchema.index({ username: 1 });
 userSchema.index({ status: 1 });
+
+// Hàm tĩnh để cập nhật số lượng ô chữ công khai
+userSchema.statics.updatePublicCrosswordCounts = async function() {
+  try {
+    console.log('Starting to update public crossword counts...');
+    
+    // Lấy tất cả users
+    const users = await this.find({});
+    const Crossword = mongoose.model('Crossword');
+    
+    // Lấy số lượng ô chữ công khai cho mỗi user
+    const updatePromises = users.map(async (user) => {
+      // Đếm số ô chữ công khai và đã hoàn thành của user
+      const count = await Crossword.countDocuments({
+        author: user._id,
+        status: 'Công khai',
+        isCompleted: true  // Chỉ đếm những ô chữ đã hoàn thành
+      });
+      
+      console.log(`User ${user.username}: ${count} public crosswords`);
+      
+      // Cập nhật số lượng nếu khác với hiện tại
+      if (user.publicCrosswordCount !== count) {
+        console.log(`Updating count for user ${user.username} from ${user.publicCrosswordCount} to ${count}`);
+        return this.findByIdAndUpdate(user._id, {
+          publicCrosswordCount: count
+        }, { new: true });
+      }
+      return null;
+    });
+
+    // Thực hiện tất cả updates
+    const results = await Promise.all(updatePromises.filter(Boolean));
+    console.log(`Updated ${results.length} users' crossword counts`);
+    
+    return results;
+  } catch (error) {
+    console.error('Error updating public crossword counts:', error);
+    throw error;
+  }
+};
 
 const User = mongoose.model('User', userSchema);
 export default User; 

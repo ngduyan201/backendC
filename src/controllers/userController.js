@@ -182,8 +182,61 @@ export const changePassword = async (req, res) => {
   }
 };
 
+export const getTopCrosswordCreators = async (req, res) => {
+  try {
+    console.log('Getting top crossword creators...');
+    
+    // Cập nhật số lượng ô chữ công khai trước khi lấy danh sách
+    await User.updatePublicCrosswordCounts();
+    console.log('Updated public crossword counts');
+    
+    // Lấy top 10 người dùng có publicCrosswordCount cao nhất
+    const topUsers = await User.find({
+      publicCrosswordCount: { $gt: 0 } // Chỉ lấy người có ít nhất 1 ô chữ
+    })
+    .select('fullName username occupation publicCrosswordCount')
+    .sort({ publicCrosswordCount: -1 })
+    .limit(10);
+
+    console.log('Found users:', topUsers);
+
+    // Format dữ liệu trả về
+    const formattedUsers = topUsers.map(user => ({
+      id: user._id,
+      name: user.fullName || user.username,
+      occupation: user.occupation || 'Chưa cập nhật',
+      crosswordCount: user.publicCrosswordCount
+    }));
+
+    console.log('Formatted users:', formattedUsers);
+
+    // Kiểm tra nếu không có dữ liệu
+    if (formattedUsers.length === 0) {
+      console.log('No users found with public crosswords');
+      return res.json({
+        success: true,
+        data: [],
+        message: 'Chưa có người dùng nào có ô chữ công khai'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: formattedUsers
+    });
+
+  } catch (error) {
+    console.error('Error getting top crossword creators:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy danh sách người tạo ô chữ hàng đầu'
+    });
+  }
+};
+
 export default {
     getProfile,
     updateProfile,
-    changePassword
+    changePassword,
+    getTopCrosswordCreators
 };
