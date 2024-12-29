@@ -290,12 +290,15 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    // Tạo mã xác thực 6 số
+    // Tạo mã reset 6 số
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Lưu mã và thời gian hết hạn (15 phút)
+    // Set thời gian hết hạn là 5 phút
+    const resetExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 phút thay vì 15 phút
+    
+    // Lưu thông tin reset vào database
     user.resetPasswordCode = resetCode;
-    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+    user.resetPasswordExpires = resetExpires;
     await user.save();
 
     // Gửi email
@@ -330,7 +333,7 @@ export const verifyResetCode = async (req, res) => {
     const user = await User.findOne({
       email,
       resetPasswordCode: code,
-      resetPasswordExpires: { $gt: Date.now() }
+      resetPasswordExpires: { $gt: Date.now() } // Kiểm tra thời gian hết hạn
     });
 
     if (!user) {

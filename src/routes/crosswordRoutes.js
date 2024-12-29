@@ -31,6 +31,6 @@ router.get('/get-secret-key', auth, crosswordController.GetSecretKey);
 router.delete('/:id', auth, crosswordController.deleteCrossword);
 router.get('/search', auth, crosswordController.search);
 router.post('/check-title', auth, crosswordController.checkDuplicateTitle);
-router.post('/crosswords/:id/complete', auth, crosswordController.markAsCompleted);
+router.post('/complete', auth, crosswordController.markAsCompleted);
 
 export default router;
