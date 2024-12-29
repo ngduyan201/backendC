@@ -67,6 +67,16 @@ const userSchema = new mongoose.Schema({
   publicCrosswordCount: {
     type: Number,
     default: 0
+  },
+  isProfileCompleted: {
+    type: Boolean,
+    default: false
+  },
+  requiredFields: {
+    fullName: { type: Boolean, default: false },
+    birthDate: { type: Boolean, default: false },
+    occupation: { type: Boolean, default: false },
+    phone: { type: Boolean, default: false }
   }
 }, {
   timestamps: true // Tự động thêm createdAt và updatedAt
@@ -77,6 +87,23 @@ userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+
+  // Kiểm tra các trường thông tin bắt buộc
+  this.isProfileCompleted = !!(
+    this.fullName &&
+    this.birthDate &&
+    this.occupation &&
+    this.phone
+  );
+
+  // Cập nhật trạng thái của từng trường
+  this.requiredFields = {
+    fullName: !!this.fullName,
+    birthDate: !!this.birthDate,
+    occupation: !!this.occupation,
+    phone: !!this.phone
+  };
+
   next();
 });
 

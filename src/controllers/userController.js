@@ -38,15 +38,8 @@ export const getProfile = async (req, res) => {
 // Cập nhật thông tin profile
 export const updateProfile = async (req, res) => {
     try {
-        console.log('Update Profile Request:', {
-            userId: req.user?._id,
-            body: req.body,
-            headers: req.headers
-        });
-        
-        const userId = req.user._id;
         const { fullName, birthDate, occupation, phone } = req.body;
-        console.log('Updating profile for user:', userId, 'with data:', req.body);
+        const userId = req.user._id;
 
         // Validate dữ liệu
         if (phone && !/^\d{10}$/.test(phone)) {

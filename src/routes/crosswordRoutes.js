@@ -1,6 +1,7 @@
 import express from 'express';
 import { crosswordController } from '../controllers/crosswordController.js';
 import { auth } from '../middleware/auth.js';
+import { checkProfileComplete } from '../middleware/checkProfile.js';
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router.use((req, res, next) => {
 });
 
 // Routes
-router.post('/', auth, crosswordController.create);
+router.post('/', auth, checkProfileComplete, crosswordController.create);
 router.get('/session', auth, crosswordController.getCurrentSession);
 router.post('/save', auth, crosswordController.saveAndEndSession);
 router.post('/end-session', auth, crosswordController.endSession);
@@ -25,7 +26,7 @@ router.get('/user', auth, crosswordController.getUserCrosswords);
 router.put('/:id', auth, crosswordController.updateCrossword);
 router.post('/edit/:id', auth, crosswordController.startEditSession);
 router.get('/library', auth, crosswordController.getLibraryCrosswords);
-router.post('/play/:id', auth, crosswordController.startPlay);
+router.post('/play/:id', auth, checkProfileComplete, crosswordController.startPlay);
 router.post('/clear-session', auth, crosswordController.clearPlaySession);
 router.get('/get-secret-key', auth, crosswordController.GetSecretKey);
 router.delete('/:id', auth, crosswordController.deleteCrossword);
