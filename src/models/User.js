@@ -56,7 +56,14 @@ const userSchema = new mongoose.Schema({
   },
   refreshToken: String,
   resetPasswordCode: String,
-  resetPasswordExpires: Date
+  resetPasswordExpires: Date,
+  stats: {
+    completedCrosswords: {
+      type: Number,
+      default: 0
+    },
+    lastCompletedAt: Date
+  }
 }, {
   timestamps: true // Tự động thêm createdAt và updatedAt
 });

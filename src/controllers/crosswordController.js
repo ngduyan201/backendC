@@ -1,5 +1,6 @@
 import Crossword from '../models/Crossword.js';
 import CryptoJS from 'crypto-js';
+import User from '../models/User.js';
 
 // Cấu hình cookie chung
 const cookieConfig = {
@@ -283,7 +284,6 @@ export const crosswordController = {
     try {
       const userId = req.user._id;
       
-      // Lấy tất cả crosswords của user, không cần phân trang
       const crosswords = await Crossword.find({ author: userId })
         .populate('author', 'fullName')
         .sort({ createdAt: -1 });
@@ -296,7 +296,9 @@ export const crosswordController = {
         status: crossword.status,
         subject: crossword.subject,
         grade: crossword.gradeLevel,
-        timesPlayed: crossword.timesPlayed || 0
+        timesPlayed: crossword.timesPlayed || 0,
+        completedBy: crossword.completedBy || [],
+        completionCount: crossword.completionCount || 0
       }));
 
       res.json({
@@ -421,12 +423,11 @@ export const crosswordController = {
 
   getLibraryCrosswords: async (_req, res) => {
     try {
-      // Thêm điều kiện isCompleted: true vào match
       const randomCrosswords = await Crossword.aggregate([
         { 
           $match: { 
             status: "Công khai",
-            isCompleted: true  // Thêm điều kiện này
+            isCompleted: true
           } 
         },
         { $sample: { size: 5 } }
@@ -454,10 +455,13 @@ export const crosswordController = {
           title: crossword.title || 'Ô chữ không có tên',
           questionCount: crossword.mainKeyword[0]?.associatedHorizontalKeywords?.length || 0,
           author: crossword.authorName || 'Ẩn danh',
+          timesPlayed: crossword.timesPlayed || 0,
           grade: crossword.gradeLevel,
           subject: crossword.subject,
           createdAt: crossword.createdAt,
-          timesPlayed: crossword.timesPlayed || 0
+          timesPlayed: crossword.timesPlayed || 0,
+          completedBy: crossword.completedBy || [],
+          completionCount: crossword.completionCount || 0
         }));
       };
 
@@ -667,7 +671,9 @@ export const crosswordController = {
         author: c.authorName,
         questionCount: c.mainKeyword[0]?.associatedHorizontalKeywords?.length || 0,
         timesPlayed: c.timesPlayed || 0,
-        createdAt: c.createdAt
+        createdAt: c.createdAt,
+        completedBy: c.completedBy || [],
+        completionCount: c.completionCount || 0
       }));
 
       return res.json({
@@ -710,6 +716,50 @@ export const crosswordController = {
       return res.status(500).json({
         success: false,
         message: 'Có lỗi xảy ra khi kiểm tra tên ô chữ'
+      });
+    }
+  },
+
+  markAsCompleted: async (req, res) => {
+    try {
+      const crosswordId = req.params.id;
+      const userId = req.user._id;
+
+      // Kiểm tra xem đã hoàn thành chưa
+      const crossword = await Crossword.findById(crosswordId);
+      const alreadyCompleted = crossword.completedBy.some(
+        completion => completion.user.toString() === userId.toString()
+      );
+
+      if (alreadyCompleted) {
+        return res.status(400).json({
+          success: false,
+          message: 'Bạn đã hoàn thành ô chữ này rồi'
+        });
+      }
+
+      // Cập nhật Crossword
+      await Crossword.findByIdAndUpdate(crosswordId, {
+        $push: { completedBy: { user: userId } },
+        $inc: { completionCount: 1 }
+      });
+
+      // Cập nhật User stats
+      await User.findByIdAndUpdate(userId, {
+        $inc: { 'stats.completedCrosswords': 1 },
+        $set: { 'stats.lastCompletedAt': new Date() }
+      });
+
+      res.json({
+        success: true,
+        message: 'Đã đánh dấu hoàn thành ô chữ'
+      });
+
+    } catch (error) {
+      console.error('Mark as completed error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra'
       });
     }
   }

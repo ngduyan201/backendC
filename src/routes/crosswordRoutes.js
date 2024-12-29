@@ -1,6 +1,7 @@
 import express from 'express';
 import { crosswordController } from '../controllers/crosswordController.js';
 import { auth } from '../middleware/auth.js';
+import { userController } from '../controllers/userController.js';
 
 const router = express.Router();
 
@@ -31,5 +32,7 @@ router.get('/get-secret-key', auth, crosswordController.GetSecretKey);
 router.delete('/:id', auth, crosswordController.deleteCrossword);
 router.get('/search', auth, crosswordController.search);
 router.post('/check-title', auth, crosswordController.checkDuplicateTitle);
+router.post('/crosswords/:id/complete', auth, crosswordController.markAsCompleted);
+router.get('/user/stats', auth, userController.getUserStats);
 
 export default router;

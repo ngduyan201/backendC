@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
 import User from '../models/User.js';
 import { sendResetEmail } from '../services/emailService.js';
 
@@ -387,14 +386,13 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    // Hash mật khẩu mới
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
-    // Update thông tin user
-    user.password = hashedPassword;
+    // Cập nhật mật khẩu - không cần hash vì middleware sẽ làm việc đó
+    user.password = newPassword;
+    // Xóa mã reset và thời gian hết hạn
     user.resetPasswordCode = undefined;
     user.resetPasswordExpires = undefined;
-    await user.save();
+    
+    await user.save(); // Middleware pre-save sẽ tự động hash mật khẩu
 
     res.json({
       success: true,

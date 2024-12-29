@@ -75,7 +75,21 @@ const crosswordSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  mainKeyword: [mainKeywordSchema]
+  mainKeyword: [mainKeywordSchema],
+  completedBy: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    completedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  completionCount: {
+    type: Number,
+    default: 0
+  }
 }, {
   timestamps: true
 });
