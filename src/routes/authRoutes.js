@@ -1,5 +1,13 @@
 import express from 'express';
-import { login, register, logout, refreshToken } from '../controllers/authController.js';
+import { 
+  login, 
+  register, 
+  logout, 
+  refreshToken,
+  forgotPassword,
+  verifyResetCode,
+  resetPassword
+} from '../controllers/authController.js';
 import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -21,5 +29,9 @@ router.get('/me', auth, async (req, res) => {
     });
   }
 });
+
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-reset-code', verifyResetCode);
+router.post('/reset-password', resetPassword);
 
 export default router;

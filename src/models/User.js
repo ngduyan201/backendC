@@ -54,7 +54,9 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  refreshToken: String
+  refreshToken: String,
+  resetPasswordCode: String,
+  resetPasswordExpires: Date
 }, {
   timestamps: true // Tự động thêm createdAt và updatedAt
 });

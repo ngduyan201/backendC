@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import User from '../models/User.js';
+import { sendResetEmail } from '../services/emailService.js';
 
 // Hàm tạo token
 const generateTokens = (userId) => {
@@ -265,6 +267,145 @@ export const changePassword = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Lỗi server khi đổi mật khẩu'
+    });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Validate email
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập email'
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email không tồn tại trong hệ thống'
+      });
+    }
+
+    // Tạo mã xác thực 6 số
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Lưu mã và thời gian hết hạn (15 phút)
+    user.resetPasswordCode = resetCode;
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+    await user.save();
+
+    // Gửi email
+    await sendResetEmail(email, resetCode);
+
+    res.json({
+      success: true,
+      message: 'Mã xác thực đã được gửi đến email của bạn'
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Có lỗi xảy ra khi xử lý yêu cầu'
+    });
+  }
+};
+
+export const verifyResetCode = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    // Validate input
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ thông tin'
+      });
+    }
+
+    const user = await User.findOne({
+      email,
+      resetPasswordCode: code,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mã xác thực không hợp lệ hoặc đã hết hạn'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Mã xác thực hợp lệ'
+    });
+
+  } catch (error) {
+    console.error('Verify reset code error:', error);
+    res.status(500).json({
+      success: false, 
+      message: 'Có lỗi xảy ra khi xác thực'
+    });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    // Validate input
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ thông tin'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+      });
+    }
+
+    const user = await User.findOne({
+      email,
+      resetPasswordCode: code,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Yêu cầu không hợp lệ hoặc đã hết hạn'
+      });
+    }
+
+    // Hash mật khẩu mới
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update thông tin user
+    user.password = hashedPassword;
+    user.resetPasswordCode = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Đặt lại mật khẩu thành công'
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Có lỗi xảy ra khi đặt lại mật khẩu'
     });
   }
 };
