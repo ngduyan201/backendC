@@ -14,8 +14,12 @@ app.use(cookieParser());
 
 // CORS configuration
 const corsOptions = {
-  origin: ['https://ochuvn.vercel.app', 'http://localhost:5173'],
-  credentials: true,
+  origin: [
+    'http://localhost:5173',
+    'https://ochuvn.vercel.app',
+    // Thêm các domain khác nếu cần
+  ],
+  credentials: true, // Cho phép gửi cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Set-Cookie']
