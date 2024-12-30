@@ -642,16 +642,13 @@ export const crosswordController = {
         'completedBy.user': userId
       }).select('_id');
 
-      // Tạo Set của các ID đã hoàn thành
       const completedIds = new Set(completedCrosswords.map(c => c._id.toString()));
 
-      // Thêm điều kiện isCompleted vào searchQuery
       const searchQuery = {
         status: 'Công khai',
-        isCompleted: true  // Thêm điều kiện này
+        isCompleted: true
       };
 
-      // Thêm điều kiện tìm kiếm nếu có
       if (query) {
         searchQuery.$or = [
           { title: { $regex: query, $options: 'i' } },
@@ -667,10 +664,8 @@ export const crosswordController = {
         searchQuery.gradeLevel = grade;
       }
 
-      // Tính skip cho phân trang
       const skip = (page - 1) * limit;
 
-      // Thực hiện query với phân trang
       const [crosswords, total] = await Promise.all([
         Crossword.find(searchQuery)
           .select('title subject gradeLevel authorName mainKeyword createdAt timesPlayed')
@@ -680,39 +675,25 @@ export const crosswordController = {
         Crossword.countDocuments(searchQuery)
       ]);
 
-      // Tính toán số trang
       const totalPages = Math.ceil(total / limit);
 
       // Format lại dữ liệu trước khi trả về
       const formattedCrosswords = crosswords.map(c => ({
         _id: c._id,
-        title: c.title,
+        title: c.title || 'Ô chữ không có tên',
         subject: c.subject,
         grade: c.gradeLevel,
-        author: c.authorName,
-        questionCount: c.mainKeyword[0]?.associatedHorizontalKeywords?.length || 0,
-        timesPlayed: c.timesPlayed || 0,
-        createdAt: c.createdAt,
-        completedBy: c.completedBy || [],
-        completionCount: c.completionCount || 0
-      }));
-
-      const formattedResults = formattedCrosswords.map(c => ({
-        _id: c._id,
-        title: c.title,
-        questionCount: c.mainKeyword[0]?.associatedHorizontalKeywords?.length || 0,
+        author: c.authorName || 'Ẩn danh',
+        questionCount: c.mainKeyword?.[0]?.associatedHorizontalKeywords?.length || 0,
         timesPlayed: c.timesPlayed || 0,
         completionCount: c.completionCount || 0,
-        isCompleted: completedIds.has(c._id.toString()),
-        author: c.author,
-        grade: c.grade,
-        subject: c.subject
+        isCompleted: completedIds.has(c._id.toString())
       }));
 
       return res.json({
         success: true,
         data: {
-          crosswords: formattedResults,
+          crosswords: formattedCrosswords,
           totalPages,
           totalResults: total
         }
