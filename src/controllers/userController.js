@@ -227,9 +227,52 @@ export const getTopCrosswordCreators = async (req, res) => {
   }
 };
 
+// Thêm function kiểm tra fullname
+export const checkDuplicateFullname = async (req, res) => {
+  try {
+    const { fullName } = req.body;
+    const currentUserId = req.user._id;
+
+    // Chuẩn hóa tên trước khi kiểm tra
+    const normalizedFullName = fullName
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Loại bỏ dấu
+      .replace(/\s+/g, ' '); // Chuẩn hóa khoảng trắng
+
+    // Tìm user có fullName giống nhau (không phải user hiện tại)
+    const existingUser = await User.findOne({
+      _id: { $ne: currentUserId },
+      $or: [
+        // Tìm chính xác tên gốc
+        { fullName: new RegExp(`^${fullName.trim()}$`, 'i') },
+        // Tìm tên đã chuẩn hóa
+        { 
+          normalizedFullName: new RegExp(`^${normalizedFullName}$`, 'i')
+        }
+      ]
+    });
+
+    // Trả về kết quả đơn giản
+    return res.json({
+      success: true,
+      isDuplicate: !!existingUser
+    });
+
+  } catch (error) {
+    console.error('Check duplicate fullname error:', error);
+    return res.status(500).json({
+      isDuplicate: true,
+      message: 'Đã có lỗi xảy ra khi kiểm tra tên'
+    });
+  }
+};
+
 export default {
     getProfile,
     updateProfile,
     changePassword,
-    getTopCrosswordCreators
+    getTopCrosswordCreators,
+    checkDuplicateFullname
 };

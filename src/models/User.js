@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  normalizedFullName: {
+    type: String,
+    trim: true
+  },
   birthDate: {
     type: Date,
     default: null
@@ -103,6 +107,15 @@ userSchema.pre('save', async function(next) {
     occupation: !!this.occupation,
     phone: !!this.phone
   };
+
+  if (this.isModified('fullName')) {
+    this.normalizedFullName = this.fullName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
 
   next();
 });
