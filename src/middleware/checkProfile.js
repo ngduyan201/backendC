@@ -1,18 +1,34 @@
-import { isValidObjectId } from 'mongoose';
-
 export const checkProfileComplete = async (req, res, next) => {
   try {
     const user = req.user;
     
-    // Kiểm tra nếu đang truy cập route cập nhật profile thì cho phép
+    // Debug log
+    console.log('Checking user profile:', {
+      fullName: user.fullName,
+      birthDate: user.birthDate,
+      occupation: user.occupation,
+      phone: user.phone
+    });
+
+    // Kiểm tra trực tiếp các giá trị thay vì dùng requiredFields
+    const isComplete = !!(
+      user.fullName?.trim() &&
+      user.birthDate &&
+      user.occupation &&
+      user.phone?.trim()
+    );
+
+    // Nếu đang truy cập route cập nhật profile thì cho phép
     const isProfileRoute = req.path === '/profile' && req.method === 'PUT';
     if (isProfileRoute) return next();
 
-    if (!user.isProfileCompleted) {
-      // Trả về thông tin chi tiết về các trường còn thiếu
-      const missingFields = Object.entries(user.requiredFields)
-        .filter(([_, isCompleted]) => !isCompleted)
-        .map(([field]) => field);
+    if (!isComplete) {
+      // Xác định các trường còn thiếu dựa trên giá trị thực
+      const missingFields = [];
+      if (!user.fullName?.trim()) missingFields.push('fullName');
+      if (!user.birthDate) missingFields.push('birthDate');
+      if (!user.occupation) missingFields.push('occupation');
+      if (!user.phone?.trim()) missingFields.push('phone');
 
       return res.status(403).json({
         success: false,
