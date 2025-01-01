@@ -1,21 +1,31 @@
+import User from '../models/User.js';
+
 export const checkProfileComplete = async (req, res, next) => {
   try {
-    const user = req.user;
-    
-    // Debug log
-    console.log('Checking user profile:', {
-      fullName: user.fullName,
-      birthDate: user.birthDate,
-      occupation: user.occupation,
-      phone: user.phone
-    });
+    // Kiểm tra xem có user không
+    if (!req.user?._id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
 
-    // Kiểm tra trực tiếp các giá trị thay vì dùng requiredFields
+    // Lấy thông tin user mới nhất từ database
+    const userFromDB = await User.findById(req.user._id);
+
+    if (!userFromDB) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    // Kiểm tra trực tiếp các giá trị từ database
     const isComplete = !!(
-      user.fullName?.trim() &&
-      user.birthDate &&
-      user.occupation &&
-      user.phone?.trim()
+      userFromDB.fullName?.trim() &&
+      userFromDB.birthDate &&
+      userFromDB.occupation &&
+      userFromDB.phone?.trim()
     );
 
     // Nếu đang truy cập route cập nhật profile thì cho phép
@@ -23,12 +33,11 @@ export const checkProfileComplete = async (req, res, next) => {
     if (isProfileRoute) return next();
 
     if (!isComplete) {
-      // Xác định các trường còn thiếu dựa trên giá trị thực
       const missingFields = [];
-      if (!user.fullName?.trim()) missingFields.push('fullName');
-      if (!user.birthDate) missingFields.push('birthDate');
-      if (!user.occupation) missingFields.push('occupation');
-      if (!user.phone?.trim()) missingFields.push('phone');
+      if (!userFromDB.fullName?.trim()) missingFields.push('fullName');
+      if (!userFromDB.birthDate) missingFields.push('birthDate');
+      if (!userFromDB.occupation) missingFields.push('occupation');
+      if (!userFromDB.phone?.trim()) missingFields.push('phone');
 
       return res.status(403).json({
         success: false,
@@ -36,10 +45,10 @@ export const checkProfileComplete = async (req, res, next) => {
         requireProfileUpdate: true,
         missingFields,
         currentProfile: {
-          fullName: user.fullName || '',
-          birthDate: user.birthDate || '',
-          occupation: user.occupation || '',
-          phone: user.phone || ''
+          fullName: userFromDB.fullName || '',
+          birthDate: userFromDB.birthDate || '',
+          occupation: userFromDB.occupation || '',
+          phone: userFromDB.phone || ''
         }
       });
     }
